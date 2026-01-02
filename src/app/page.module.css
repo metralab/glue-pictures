@@ -48,24 +48,6 @@
   color: #c7d2fe;
 }
 
-.badges {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: flex-end;
-  min-width: 180px;
-}
-
-.badge {
-  background: rgba(255, 255, 255, 0.1);
-  color: #e5e7eb;
-  padding: 8px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  font-size: 13px;
-  width: fit-content;
-}
-
 .card {
   background: #fdfdfd;
   border-radius: 18px;

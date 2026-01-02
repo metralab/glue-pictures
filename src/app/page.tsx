@@ -1,26 +1,10 @@
 "use client";
 
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
-import { PDFDocument } from "pdf-lib";
 import styles from "./page.module.css";
-
-type UploadItem = {
-  id: string;
-  file: File;
-  previewUrl: string;
-  name: string;
-  size: number;
-};
-
-type PagePresetKey = "a4" | "letter";
-
-const PAGE_PRESETS: Record<
-  PagePresetKey,
-  { width: number; height: number; label: string }
-> = {
-  a4: { width: 595.28, height: 841.89, label: "A4" },
-  letter: { width: 612, height: 792, label: "Letter" },
-};
+import { PagePresetKey, UploadItem } from "./types";
+import { PAGE_PRESETS } from "./constants";
+import { generatePdf } from "./pdf";
 
 const formatMB = (bytes: number) =>
   `${(bytes / 1024 / 1024).toFixed(1)} MB`.replace("NaN", "0.0 MB");
@@ -29,80 +13,6 @@ const generateId = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
     : Math.random().toString(36).slice(2);
-
-type DrawableImage = ImageBitmap | HTMLImageElement;
-
-async function loadDrawableImage(
-  file: File,
-): Promise<{ image: DrawableImage; revoke?: () => void }> {
-  if (typeof createImageBitmap === "function") {
-    const bitmap = await createImageBitmap(file);
-    return { image: bitmap };
-  }
-
-  const url = URL.createObjectURL(file);
-  return await new Promise((resolve, reject) => {
-    const img = new Image();
-    img.decoding = "async";
-    img.onload = () => resolve({ image: img, revoke: () => URL.revokeObjectURL(url) });
-    img.onerror = (error) => {
-      URL.revokeObjectURL(url);
-      reject(error);
-    };
-    img.src = url;
-  });
-}
-
-async function downscaleForPdf(file: File, maxSide: number, quality: number) {
-  const { image, revoke } = await loadDrawableImage(file);
-  const width = (image as any).width as number;
-  const height = (image as any).height as number;
-  const ratio = Math.min(1, maxSide / Math.max(width, height));
-  const targetWidth = Math.max(1, Math.round(width * ratio));
-  const targetHeight = Math.max(1, Math.round(height * ratio));
-
-  const canvas = document.createElement("canvas");
-  canvas.width = targetWidth;
-  canvas.height = targetHeight;
-
-  const context = canvas.getContext("2d");
-  if (!context) {
-    revoke?.();
-    throw new Error("Canvas not supported in this browser.");
-  }
-
-  context.imageSmoothingEnabled = true;
-  context.imageSmoothingQuality = "high";
-  context.drawImage(image, 0, 0, targetWidth, targetHeight);
-
-  const mimeType = file.type === "image/png" ? "image/png" : "image/jpeg";
-  const blob = await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob(
-      (value) => {
-        if (value) {
-          resolve(value);
-        } else {
-          reject(new Error("Unable to encode image."));
-        }
-      },
-      mimeType,
-      mimeType === "image/jpeg" ? quality : undefined,
-    );
-  });
-
-  if ("close" in image && typeof (image as ImageBitmap).close === "function") {
-    (image as ImageBitmap).close();
-  }
-  revoke?.();
-
-  const arrayBuffer = await blob.arrayBuffer();
-  return {
-    bytes: new Uint8Array(arrayBuffer),
-    width: targetWidth,
-    height: targetHeight,
-    mimeType,
-  };
-}
 
 const clampNumber = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value));
@@ -176,94 +86,6 @@ export default function Home() {
     return Math.min(columns, 6);
   }, [columns]);
 
-  const generatePdf = async () => {
-    if (!uploads.length || isBuilding) return;
-    setIsBuilding(true);
-    setStatus("Preparing images...");
-
-    try {
-      const preset = PAGE_PRESETS[pageSize];
-      const pageWidth = preset.width;
-      const pageHeight = preset.height;
-
-      const safeColumns = Math.max(1, columns);
-      const cellWidth = Math.max(
-        40,
-        (pageWidth - padding * 2 - gutter * (safeColumns - 1)) / safeColumns,
-      );
-      const cellHeight = cellWidth;
-      const rowsPerPage = Math.max(
-        1,
-        Math.floor((pageHeight - padding * 2 + gutter) / (cellHeight + gutter)),
-      );
-
-      const pdfDoc = await PDFDocument.create();
-      let page = pdfDoc.addPage([pageWidth, pageHeight]);
-      let col = 0;
-      let row = 0;
-
-      for (let i = 0; i < uploads.length; i++) {
-        const upload = uploads[i];
-        setStatus(`Optimizing image ${i + 1} of ${uploads.length}...`);
-        const processed = await downscaleForPdf(upload.file, maxSide, jpegQuality);
-        const embedded =
-          processed.mimeType === "image/png"
-            ? await pdfDoc.embedPng(processed.bytes)
-            : await pdfDoc.embedJpg(processed.bytes);
-
-        if (row >= rowsPerPage) {
-          page = pdfDoc.addPage([pageWidth, pageHeight]);
-          row = 0;
-          col = 0;
-        }
-
-        const x = padding + col * (cellWidth + gutter);
-        const baseY = pageHeight - padding - cellHeight - row * (cellHeight + gutter);
-        const scale = Math.min(
-          cellWidth / embedded.width,
-          cellHeight / embedded.height,
-        );
-        const drawWidth = embedded.width * scale;
-        const drawHeight = embedded.height * scale;
-
-        page.drawImage(embedded, {
-          x: x + (cellWidth - drawWidth) / 2,
-          y: baseY + (cellHeight - drawHeight) / 2,
-          width: drawWidth,
-          height: drawHeight,
-        });
-
-        col += 1;
-        if (col >= safeColumns) {
-          col = 0;
-          row += 1;
-        }
-      }
-
-      setStatus("Building PDF...");
-      const pdfBytes = await pdfDoc.save();
-      const blob = new Blob([pdfBytes], { type: "application/pdf" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-
-      const cleanedName = fileName.trim().length ? fileName.trim() : "images.pdf";
-      link.download = cleanedName.endsWith(".pdf")
-        ? cleanedName
-        : `${cleanedName}.pdf`;
-      link.href = url;
-      link.click();
-      URL.revokeObjectURL(url);
-      setStatus(`PDF ready (${(pdfBytes.length / 1024 / 1024).toFixed(1)} MB).`);
-    } catch (error) {
-      console.error(error);
-      setStatus(
-        "Unable to build the PDF. Try lowering the max side or number of columns.",
-      );
-    } finally {
-      setIsBuilding(false);
-    }
-  };
-
   return (
     <div className={styles.page}>
       <main className={styles.main}>
@@ -276,10 +98,6 @@ export default function Home() {
               and we will resize the images on the fly before packing them into a
               PDF.
             </p>
-          </div>
-          <div className={styles.badges}>
-            <span className={styles.badge}>Handles big batches</span>
-            <span className={styles.badge}>Client-side only</span>
           </div>
         </header>
 
@@ -409,7 +227,19 @@ export default function Home() {
             <button
               className={styles.primaryButton}
               type="button"
-              onClick={generatePdf}
+              onClick={async () => await generatePdf({
+                uploads,
+                isBuilding,
+                setIsBuilding,
+                setStatus,
+                pageSize,
+                columns,
+                padding,
+                gutter,
+                maxSide,
+                jpegQuality,
+                fileName,
+              })}
               disabled={!uploads.length || isBuilding}
             >
               {isBuilding ? "Generating..." : "Generate PDF"}
