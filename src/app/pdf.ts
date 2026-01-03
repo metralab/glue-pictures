@@ -136,8 +136,8 @@ export const generatePdf: (args: Args) => Promise<void> = async ({
 
 async function downscaleForPdf(file: File, maxSide: number, quality: number) {
   const { image, revoke } = await loadDrawableImage(file);
-  const width = (image as any).width as number;
-  const height = (image as any).height as number;
+  const width = image.width;
+  const height = image.height;
   const ratio = Math.min(1, maxSide / Math.max(width, height));
   const targetWidth = Math.max(1, Math.round(width * ratio));
   const targetHeight = Math.max(1, Math.round(height * ratio));
