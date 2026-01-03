@@ -2,9 +2,9 @@
 
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import styles from "./page.module.css";
-import { PagePresetKey, UploadItem } from "./types";
-import { PAGE_PRESETS } from "./constants";
-import { generatePdf } from "./pdf";
+import { PagePresetKey, UploadItem } from "./lib/types";
+import { PAGE_PRESETS } from "./lib/constants";
+import { generatePdf } from "./lib/pdf";
 
 const formatMB = (bytes: number) =>
   `${(bytes / 1024 / 1024).toFixed(1)} MB`.replace("NaN", "0.0 MB");
