@@ -28,6 +28,8 @@ export default function Home() {
   const [status, setStatus] = useState<string | null>(null);
   const [isBuilding, setIsBuilding] = useState(false);
   const [fileName, setFileName] = useState("risultato.pdf");
+  const [coverText, setCoverText] = useState("");
+  const [footerText, setFooterText] = useState("");
   const uploadsRef = useRef<UploadItem[]>([]);
 
   useEffect(() => {
@@ -218,6 +220,26 @@ export default function Home() {
               />
               <small>.pdf verrà aggiunto se mancante.</small>
             </div>
+            <div className={styles.control}>
+              <label htmlFor="coverText">Testo copertina</label>
+              <input
+                id="coverText"
+                type="text"
+                value={coverText}
+                onChange={(event) => setCoverText(event.target.value)}
+              />
+              <small>Campo facoltativo.</small>
+            </div>
+            <div className={styles.control}>
+              <label htmlFor="footerText">Testo a piè di pagina</label>
+              <input
+                id="footerText"
+                type="text"
+                value={footerText}
+                onChange={(event) => setFooterText(event.target.value)}
+              />
+              <small>Campo facoltativo.</small>
+            </div>
           </div>
 
           <div className={styles.actions}>
@@ -236,6 +258,8 @@ export default function Home() {
                 maxSide,
                 jpegQuality,
                 fileName,
+                coverText,
+                footerText,
               })}
               disabled={!uploads.length || isBuilding}
             >
