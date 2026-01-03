@@ -1,4 +1,4 @@
-import { PDFDocument } from "pdf-lib";
+import { PDFDocument, StandardFonts } from "pdf-lib";
 import { PAGE_PRESETS } from "./constants";
 import { DrawableImage, PagePresetKey, UploadItem } from "./types";
 
@@ -53,6 +53,9 @@ export const generatePdf: (args: Args) => Promise<void> = async ({
     );
 
     const pdfDoc = await PDFDocument.create();
+    const font = pdfDoc.embedStandardFont(StandardFonts.Helvetica);
+    const fontSize = 10;
+    const textPadding = 5;
     let page = pdfDoc.addPage([pageWidth, pageHeight]);
     let col = 0;
     let row = 0;
@@ -86,6 +89,18 @@ export const generatePdf: (args: Args) => Promise<void> = async ({
         y: baseY + (cellHeight - drawHeight) / 2,
         width: drawWidth,
         height: drawHeight,
+      });
+
+      // Draw image title as caption
+      const text = upload.file.name.replace(/\.[^/.]+$/, "");
+      const textWidth = font.widthOfTextAtSize(text, fontSize);
+      const textX = x + (cellWidth - textWidth) / 2;
+      const textY = baseY + (cellHeight - drawHeight) / 2 - fontSize - textPadding;
+      page.drawText(text, {
+        x: textX,
+        y: textY,
+        size: fontSize,
+        font,
       });
 
       col += 1;
