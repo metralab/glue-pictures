@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Glue Pictures | Image to PDF",
-  description: "Arrange many images into a grid and export them as a PDF",
+  description: "Disponi immagini in una griglia ed esportale come PDF",
 };
 
 export default function RootLayout({

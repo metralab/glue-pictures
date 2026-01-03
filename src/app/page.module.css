@@ -28,14 +28,6 @@
   box-shadow: 0 20px 80px rgba(0, 0, 0, 0.45);
 }
 
-.kicker {
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 12px;
-  margin-bottom: 8px;
-  color: #7ad1ff;
-}
-
 .header h1 {
   font-size: 36px;
   line-height: 1.1;

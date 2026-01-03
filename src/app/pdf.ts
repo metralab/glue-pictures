@@ -31,22 +31,25 @@ export const generatePdf: (args: Args) => Promise<void> = async ({
 }) => {
   if (!uploads.length || isBuilding) return;
   setIsBuilding(true);
-  setStatus("Preparing images...");
+  setStatus("Preparazione...");
 
   try {
+    const PT_PER_MM = 72 / 25.4;
     const preset = PAGE_PRESETS[pageSize];
-    const pageWidth = preset.width;
-    const pageHeight = preset.height;
+    const pageWidth = preset.width * PT_PER_MM;
+    const pageHeight = preset.height * PT_PER_MM;
+    const paddingPt = padding * PT_PER_MM;
+    const gutterPt = gutter * PT_PER_MM;
 
     const safeColumns = Math.max(1, columns);
     const cellWidth = Math.max(
       40,
-      (pageWidth - padding * 2 - gutter * (safeColumns - 1)) / safeColumns,
+      (pageWidth - paddingPt * 2 - gutterPt * (safeColumns - 1)) / safeColumns,
     );
     const cellHeight = cellWidth;
     const rowsPerPage = Math.max(
       1,
-      Math.floor((pageHeight - padding * 2 + gutter) / (cellHeight + gutter)),
+      Math.floor((pageHeight - paddingPt * 2 + gutterPt) / (cellHeight + gutterPt)),
     );
 
     const pdfDoc = await PDFDocument.create();
@@ -56,7 +59,7 @@ export const generatePdf: (args: Args) => Promise<void> = async ({
 
     for (let i = 0; i < uploads.length; i++) {
       const upload = uploads[i];
-      setStatus(`Optimizing image ${i + 1} of ${uploads.length}...`);
+      setStatus(`Immagine ${i + 1} di ${uploads.length}...`);
       const processed = await downscaleForPdf(upload.file, maxSide, jpegQuality);
       const embedded =
         processed.mimeType === "image/png"
@@ -69,8 +72,8 @@ export const generatePdf: (args: Args) => Promise<void> = async ({
         col = 0;
       }
 
-      const x = padding + col * (cellWidth + gutter);
-      const baseY = pageHeight - padding - cellHeight - row * (cellHeight + gutter);
+      const x = paddingPt + col * (cellWidth + gutterPt);
+      const baseY = pageHeight - paddingPt - cellHeight - row * (cellHeight + gutterPt);
       const scale = Math.min(
         cellWidth / embedded.width,
         cellHeight / embedded.height,
@@ -92,24 +95,24 @@ export const generatePdf: (args: Args) => Promise<void> = async ({
       }
     }
 
-    setStatus("Building PDF...");
+    setStatus("Sto generando il PDF...");
     const pdfBytes = await pdfDoc.save();
     const blob = new Blob([pdfBytes], { type: "application/pdf" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
 
-    const cleanedName = fileName.trim().length ? fileName.trim() : "images.pdf";
+    const cleanedName = fileName.trim().length ? fileName.trim() : "risultato.pdf";
     link.download = cleanedName.endsWith(".pdf")
       ? cleanedName
       : `${cleanedName}.pdf`;
     link.href = url;
     link.click();
     URL.revokeObjectURL(url);
-    setStatus(`PDF ready (${(pdfBytes.length / 1024 / 1024).toFixed(1)} MB).`);
+    setStatus(`PDF pronto (${(pdfBytes.length / 1024 / 1024).toFixed(1)} MB).`);
   } catch (error) {
     console.error(error);
     setStatus(
-      "Unable to build the PDF. Try lowering the max side or number of columns.",
+      "Non è stato possibile generare il PDF. Prova a ridurre il lato massimo immagine o il numero di colonne.",
     );
   } finally {
     setIsBuilding(false);

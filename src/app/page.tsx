@@ -21,13 +21,13 @@ export default function Home() {
   const [uploads, setUploads] = useState<UploadItem[]>([]);
   const [columns, setColumns] = useState(3);
   const [maxSide, setMaxSide] = useState(1600);
-  const [gutter, setGutter] = useState(12);
-  const [padding, setPadding] = useState(32);
+  const [gutter, setGutter] = useState(4);
+  const [padding, setPadding] = useState(11);
   const [jpegQuality, setJpegQuality] = useState(0.85);
   const [pageSize, setPageSize] = useState<PagePresetKey>("a4");
   const [status, setStatus] = useState<string | null>(null);
   const [isBuilding, setIsBuilding] = useState(false);
-  const [fileName, setFileName] = useState("images.pdf");
+  const [fileName, setFileName] = useState("risultato.pdf");
   const uploadsRef = useRef<UploadItem[]>([]);
 
   useEffect(() => {
@@ -91,12 +91,9 @@ export default function Home() {
       <main className={styles.main}>
         <header className={styles.header}>
           <div>
-            <p className={styles.kicker}>Glue your pictures together</p>
-            <h1>Upload many images, get a tidy PDF.</h1>
+            <h1>Ottieni un PDF con immagini disposte in griglia</h1>
             <p className={styles.lead}>
-              Drop in a large batch of photos, pick how wide the grid should be,
-              and we will resize the images on the fly before packing them into a
-              PDF.
+              Seleziona più immagini &#8594; imposta la griglia &#8594; clicca &ldquo;Genera PDF&rdquo;.
             </p>
           </div>
         </header>
@@ -111,7 +108,7 @@ export default function Home() {
                 multiple
                 onChange={handleFileChange}
               />
-              <span>Select images</span>
+              <span>Seleziona immagini</span>
             </label>
             <button
               className={styles.ghostButton}
@@ -119,10 +116,10 @@ export default function Home() {
               disabled={!uploads.length}
               type="button"
             >
-              Clear list
+              Rimuovi immagini
             </button>
             <div className={styles.summary}>
-              <span>{uploads.length} selected</span>
+              <span>{uploads.length} selezionate</span>
               <span>·</span>
               <span>{formatMB(totalBytes)}</span>
             </div>
@@ -130,7 +127,7 @@ export default function Home() {
 
           <div className={styles.controls}>
             <div className={styles.control}>
-              <label htmlFor="columns">Images per row</label>
+              <label htmlFor="columns">Immagini per riga</label>
               <input
                 id="columns"
                 type="number"
@@ -143,7 +140,7 @@ export default function Home() {
               />
             </div>
             <div className={styles.control}>
-              <label htmlFor="maxSide">Max image side (px)</label>
+              <label htmlFor="maxSide">Lato massimo immagine (px)</label>
               <input
                 id="maxSide"
                 type="number"
@@ -154,37 +151,37 @@ export default function Home() {
                   setMaxSide(clampNumber(Number(event.target.value), 400, 6000))
                 }
               />
-              <small>Downscale before embedding to keep PDFs lean.</small>
+              <small>Ridimensiona immagini per ottenere un PDF più leggero.</small>
             </div>
             <div className={styles.control}>
-              <label htmlFor="padding">Page padding (pt)</label>
+              <label htmlFor="padding">Spaziatura pagina (mm)</label>
               <input
                 id="padding"
                 type="number"
-                min={12}
-                max={72}
+                min={5}
+                max={30}
                 value={padding}
                 onChange={(event) =>
-                  setPadding(clampNumber(Number(event.target.value), 12, 72))
+                  setPadding(clampNumber(Number(event.target.value), 5, 30))
                 }
               />
             </div>
             <div className={styles.control}>
-              <label htmlFor="gutter">Cell gap (pt)</label>
+              <label htmlFor="gutter">Spazio tra celle (mm)</label>
               <input
                 id="gutter"
                 type="number"
-                min={4}
-                max={32}
+                min={1}
+                max={15}
                 value={gutter}
                 onChange={(event) =>
-                  setGutter(clampNumber(Number(event.target.value), 4, 32))
+                  setGutter(clampNumber(Number(event.target.value), 1, 15))
                 }
               />
             </div>
             <div className={styles.control}>
               <label htmlFor="quality">
-                JPEG quality ({Math.round(jpegQuality * 100)}%)
+                Qualità JPEG ({Math.round(jpegQuality * 100)}%)
               </label>
               <input
                 id="quality"
@@ -197,7 +194,7 @@ export default function Home() {
               />
             </div>
             <div className={styles.control}>
-              <label htmlFor="pageSize">Page size</label>
+              <label htmlFor="pageSize">Dimensione pagina</label>
               <select
                 id="pageSize"
                 value={pageSize}
@@ -206,20 +203,20 @@ export default function Home() {
                 {Object.entries(PAGE_PRESETS).map(([key, preset]) => (
                   <option key={key} value={key}>
                     {preset.label} ({Math.round(preset.width)}×
-                    {Math.round(preset.height)} pt)
+                    {Math.round(preset.height)} mm)
                   </option>
                 ))}
               </select>
             </div>
             <div className={styles.control}>
-              <label htmlFor="fileName">Output name</label>
+              <label htmlFor="fileName">Nome PDF</label>
               <input
                 id="fileName"
                 type="text"
                 value={fileName}
                 onChange={(event) => setFileName(event.target.value)}
               />
-              <small>.pdf will be added if missing.</small>
+              <small>.pdf verrà aggiunto se mancante.</small>
             </div>
           </div>
 
@@ -242,7 +239,7 @@ export default function Home() {
               })}
               disabled={!uploads.length || isBuilding}
             >
-              {isBuilding ? "Generating..." : "Generate PDF"}
+              {isBuilding ? "Generazione..." : "Genera PDF"}
             </button>
             {status && <p className={styles.status}>{status}</p>}
           </div>
@@ -250,18 +247,14 @@ export default function Home() {
 
         <section className={styles.card}>
           <div className={styles.previewHeader}>
-            <div>
-              <p className={styles.kicker}>Preview grid</p>
-              <h2>What will land in the PDF</h2>
-            </div>
+            <h2>Cosa finirà nel PDF</h2>
             <p className={styles.previewHint}>
-              Showing up to {gridPreviewColumns} columns here. The PDF uses your full
-              settings.
+              Anteprima della griglia (non usa tutti i parametri impostati sopra)
             </p>
           </div>
           {uploads.length === 0 ? (
             <div className={styles.empty}>
-              <p>Start by adding images. Previews will appear here.</p>
+              <p>Aggiungi immagini. Le anteprime appariranno qui.</p>
             </div>
           ) : (
             <div
@@ -283,7 +276,7 @@ export default function Home() {
                       type="button"
                       onClick={() => removeImage(upload.id)}
                     >
-                      Remove
+                      Rimuovi
                     </button>
                   </div>
                 </div>
