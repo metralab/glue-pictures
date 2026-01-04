@@ -26,8 +26,9 @@ export const SettingsPanel: React.FC<Props> = ({
   const [jpegQuality, setJpegQuality] = useState(0.85);
   const [pageSize, setPageSize] = useState<PagePresetKey>("a4");
   const [fileName, setFileName] = useState("risultato.pdf");
-  const [coverText, setCoverText] = useState("");
+  const [headerText, setHeaderText] = useState("");
   const [footerText, setFooterText] = useState("");
+  const [startingPageNumber, setStartingPageNumber] = useState(1);
 
   const [isBuilding, setIsBuilding] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -168,12 +169,12 @@ export const SettingsPanel: React.FC<Props> = ({
       </div>
       <hr className={styles.separator} />
       <div className={styles.control}>
-        <label htmlFor="coverText">Testo copertina</label>
+        <label htmlFor="headerText">Testo intestazione</label>
         <input
-          id="coverText"
+          id="headerText"
           type="text"
-          value={coverText}
-          onChange={(event) => setCoverText(event.target.value)} />
+          value={headerText}
+          onChange={(event) => setHeaderText(event.target.value)} />
         <small>Campo facoltativo.</small>
       </div>
       <div className={styles.control}>
@@ -184,6 +185,16 @@ export const SettingsPanel: React.FC<Props> = ({
           value={footerText}
           onChange={(event) => setFooterText(event.target.value)} />
         <small>Campo facoltativo.</small>
+      </div>
+      <div className={styles.control}>
+        <label htmlFor="startingPageNumber">Numero pagina iniziale</label>
+        <input
+          id="startingPageNumber"
+          type="number"
+          min={1}
+          value={startingPageNumber}
+          onChange={(event) => setStartingPageNumber(Number(event.target.value))} />
+        <small>Il numero della prima pagina.</small>
       </div>
     </div>
 
@@ -203,8 +214,9 @@ export const SettingsPanel: React.FC<Props> = ({
           maxSide,
           jpegQuality,
           fileName,
-          coverText,
+          headerText,
           footerText,
+          startingPageNumber,
         })}
         disabled={!uploads.length || isBuilding}
       >

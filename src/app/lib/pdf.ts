@@ -14,8 +14,9 @@ interface Args {
   maxSide: number;
   jpegQuality: number;
   fileName: string;
-  coverText: string;
+  headerText: string;
   footerText: string;
+  startingPageNumber: number;
 }
 
 export const generatePdf: (args: Args) => Promise<void> = async ({
@@ -30,8 +31,9 @@ export const generatePdf: (args: Args) => Promise<void> = async ({
   maxSide,
   jpegQuality,
   fileName,
-  coverText,
+  headerText,
   footerText,
+  startingPageNumber,
 }) => {
   if (!uploads.length || isBuilding) return;
   setIsBuilding(true);
@@ -60,20 +62,6 @@ export const generatePdf: (args: Args) => Promise<void> = async ({
     const font = pdfDoc.embedStandardFont(StandardFonts.Helvetica);
     const fontSize = 10;
     const textPadding = 5;
-
-    if (coverText.trim()) {
-      const coverPage = pdfDoc.addPage([pageWidth, pageHeight]);
-      const coverFontSize = 24;
-      const textWidth = font.widthOfTextAtSize(coverText, coverFontSize);
-      const textX = (pageWidth - textWidth) / 2;
-      const textY = pageHeight / 2;
-      coverPage.drawText(coverText, {
-        x: textX,
-        y: textY,
-        size: coverFontSize,
-        font,
-      });
-    }
 
     let page = pdfDoc.addPage([pageWidth, pageHeight]);
     let col = 0;
@@ -129,11 +117,13 @@ export const generatePdf: (args: Args) => Promise<void> = async ({
       }
     }
 
-    if (footerText.trim()) {
-      const footerFontSize = 8;
-      const footerY = 20;
-      const allPages = pdfDoc.getPages();
-      allPages.forEach(page => {
+    const allPages = pdfDoc.getPages();
+    const headerTextExists = headerText.trim();
+    const footerTextExists = footerText.trim();
+    allPages.forEach((page, index) => {
+      if (footerTextExists) {
+        const footerFontSize = 8;
+        const footerY = 20;
         const textWidth = font.widthOfTextAtSize(footerText, footerFontSize);
         const textX = (pageWidth - textWidth) / 2;
         page.drawText(footerText, {
@@ -142,8 +132,35 @@ export const generatePdf: (args: Args) => Promise<void> = async ({
           size: footerFontSize,
           font,
         });
+      }
+
+      if (headerTextExists) {
+        const headerFontSize = 8;
+        const headerY = pageHeight - 20;
+        const textWidth = font.widthOfTextAtSize(headerText, headerFontSize);
+        const textX = (pageWidth - textWidth) / 2;
+        page.drawText(headerText, {
+          x: textX,
+          y: headerY,
+          size: headerFontSize,
+          font,
+        });
+      }
+
+      // Page numbering
+      const pageNumber = startingPageNumber + index;
+      const pageNumberText = pageNumber.toString();
+      const pageNumberFontSize = 8;
+      const pageNumberWidth = font.widthOfTextAtSize(pageNumberText, pageNumberFontSize);
+      const pageNumberX = pageWidth - pageNumberWidth - 20;
+      const pageNumberY = 20;
+      page.drawText(pageNumberText, {
+        x: pageNumberX,
+        y: pageNumberY,
+        size: pageNumberFontSize,
+        font,
       });
-    }
+    });
 
     setStatus("Sto generando il PDF...");
     const pdfBytes = await pdfDoc.save();
