@@ -166,6 +166,7 @@ export const SettingsPanel: React.FC<Props> = ({
           onChange={(event) => setFileName(event.target.value)} />
         <small>.pdf verrà aggiunto se mancante.</small>
       </div>
+      <hr className={styles.separator} />
       <div className={styles.control}>
         <label htmlFor="coverText">Testo copertina</label>
         <input

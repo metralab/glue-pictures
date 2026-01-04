@@ -236,6 +236,13 @@
   font-weight: 600;
 }
 
+.separator {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 16px 0;
+  grid-column: 1 / -1;
+}
+
 @media (max-width: 900px) {
   .header {
     flex-direction: column;
