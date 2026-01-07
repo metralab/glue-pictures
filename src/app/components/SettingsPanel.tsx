@@ -29,6 +29,7 @@ export const SettingsPanel: React.FC<Props> = ({
   const [headerText, setHeaderText] = useState("");
   const [footerText, setFooterText] = useState("");
   const [startingPageNumber, setStartingPageNumber] = useState(1);
+  const [logo, setLogo] = useState<File | undefined>(undefined);
 
   const [isBuilding, setIsBuilding] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -178,6 +179,15 @@ export const SettingsPanel: React.FC<Props> = ({
         <small>Campo facoltativo.</small>
       </div>
       <div className={styles.control}>
+        <label htmlFor="logo">Logo intestazione</label>
+        <input
+          id="logo"
+          type="file"
+          accept="image/*"
+          onChange={(event) => setLogo(event.target.files?.[0])} />
+        <small>Campo facoltativo. Immagine da posizionare accanto all&apos;intestazione.</small>
+      </div>
+      <div className={styles.control}>
         <label htmlFor="footerText">Testo a piè di pagina</label>
         <input
           id="footerText"
@@ -217,6 +227,7 @@ export const SettingsPanel: React.FC<Props> = ({
           headerText,
           footerText,
           startingPageNumber,
+          logo,
         })}
         disabled={!uploads.length || isBuilding}
       >

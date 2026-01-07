@@ -1,4 +1,4 @@
-import { PDFDocument, StandardFonts } from "pdf-lib";
+import { PDFDocument, StandardFonts, PDFImage } from "pdf-lib";
 import { PAGE_PRESETS } from "./constants";
 import { DrawableImage, PagePresetKey, UploadItem } from "./types";
 
@@ -17,6 +17,7 @@ interface Args {
   headerText: string;
   footerText: string;
   startingPageNumber: number;
+  logo?: File;
 }
 
 export const generatePdf: (args: Args) => Promise<void> = async ({
@@ -34,6 +35,7 @@ export const generatePdf: (args: Args) => Promise<void> = async ({
   headerText,
   footerText,
   startingPageNumber,
+  logo,
 }) => {
   if (!uploads.length || isBuilding) return;
   setIsBuilding(true);
@@ -47,6 +49,8 @@ export const generatePdf: (args: Args) => Promise<void> = async ({
     const paddingPt = padding * PT_PER_MM;
     const gutterPt = gutter * PT_PER_MM;
 
+    const headerSpace = headerText.trim() ? 40 : 0; // pt
+
     const safeColumns = Math.max(1, columns);
     const cellWidth = Math.max(
       40,
@@ -55,13 +59,22 @@ export const generatePdf: (args: Args) => Promise<void> = async ({
     const cellHeight = cellWidth;
     const rowsPerPage = Math.max(
       1,
-      Math.floor((pageHeight - paddingPt * 2 + gutterPt) / (cellHeight + gutterPt)),
+      Math.floor((pageHeight - headerSpace - paddingPt * 2 + gutterPt) / (cellHeight + gutterPt)),
     );
 
     const pdfDoc = await PDFDocument.create();
     const font = pdfDoc.embedStandardFont(StandardFonts.Helvetica);
     const fontSize = 10;
     const textPadding = 5;
+
+    let embeddedLogo: PDFImage | null = null;
+    if (logo) {
+      setStatus("Elaborazione logo...");
+      const processedLogo = await downscaleForPdf(logo, 500, 0.95);
+      embeddedLogo = processedLogo.mimeType === "image/png"
+        ? await pdfDoc.embedPng(processedLogo.bytes)
+        : await pdfDoc.embedJpg(processedLogo.bytes);
+    }
 
     let page = pdfDoc.addPage([pageWidth, pageHeight]);
     let col = 0;
@@ -83,7 +96,7 @@ export const generatePdf: (args: Args) => Promise<void> = async ({
       }
 
       const x = paddingPt + col * (cellWidth + gutterPt);
-      const baseY = pageHeight - paddingPt - cellHeight - row * (cellHeight + gutterPt);
+      const baseY = (pageHeight - headerSpace) - paddingPt - cellHeight - row * (cellHeight + gutterPt);
       const scale = Math.min(
         cellWidth / embedded.width,
         cellHeight / embedded.height,
@@ -138,7 +151,25 @@ export const generatePdf: (args: Args) => Promise<void> = async ({
         const headerFontSize = 8;
         const headerY = pageHeight - 20;
         const textWidth = font.widthOfTextAtSize(headerText, headerFontSize);
-        const textX = (pageWidth - textWidth) / 2;
+        let logoWidth = 0;
+        let logoHeight = 0;
+        if (embeddedLogo) {
+          const scale = (headerFontSize * 3) / embeddedLogo.height;
+          logoWidth = embeddedLogo.width * scale;
+          logoHeight = embeddedLogo.height * scale;
+        }
+        const padding = 5; // pt
+        const totalWidth = logoWidth + (logoWidth > 0 ? padding : 0) + textWidth;
+        const startX = (pageWidth - totalWidth) / 2;
+        if (embeddedLogo) {
+          page.drawImage(embeddedLogo, {
+            x: startX,
+            y: headerY - logoHeight / 2,
+            width: logoWidth,
+            height: logoHeight,
+          });
+        }
+        const textX = startX + logoWidth + (logoWidth > 0 ? padding : 0);
         page.drawText(headerText, {
           x: textX,
           y: headerY,
