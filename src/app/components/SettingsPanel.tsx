@@ -169,7 +169,7 @@ export const SettingsPanel: React.FC<Props> = ({
       </div>
       <hr className={styles.separator} />
       <div className={styles.control}>
-        <label htmlFor="headerText">Testo intestazione</label>
+        <label htmlFor="headerText">Intestazione</label>
         <input
           id="headerText"
           type="text"
