@@ -9,7 +9,9 @@ interface Args {
   setStatus: (v: string) => void;
   pageSize: PagePresetKey;
   columns: number;
-  padding: number;
+  verticalPadding: number;
+  leftPadding: number;
+  rightPadding: number;
   gutter: number;
   maxSide: number;
   jpegQuality: number;
@@ -27,7 +29,9 @@ export const generatePdf: (args: Args) => Promise<void> = async ({
   setStatus,
   pageSize,
   columns,
-  padding,
+  verticalPadding,
+  leftPadding,
+  rightPadding,
   gutter,
   maxSide,
   jpegQuality,
@@ -46,7 +50,9 @@ export const generatePdf: (args: Args) => Promise<void> = async ({
     const preset = PAGE_PRESETS[pageSize];
     const pageWidth = preset.width * PT_PER_MM;
     const pageHeight = preset.height * PT_PER_MM;
-    const paddingPt = padding * PT_PER_MM;
+    const verticalPaddingPt = verticalPadding * PT_PER_MM;
+    const leftPaddingPt = leftPadding * PT_PER_MM;
+    const rightPaddingPt = rightPadding * PT_PER_MM;
     const gutterPt = gutter * PT_PER_MM;
 
     const headerSpace = headerText.trim() ? 40 : 0; // pt
@@ -54,12 +60,12 @@ export const generatePdf: (args: Args) => Promise<void> = async ({
     const safeColumns = Math.max(1, columns);
     const cellWidth = Math.max(
       40,
-      (pageWidth - paddingPt * 2 - gutterPt * (safeColumns - 1)) / safeColumns,
+      (pageWidth - leftPaddingPt - rightPaddingPt - gutterPt * (safeColumns - 1)) / safeColumns,
     );
     const cellHeight = cellWidth;
     const rowsPerPage = Math.max(
       1,
-      Math.floor((pageHeight - headerSpace - paddingPt * 2 + gutterPt) / (cellHeight + gutterPt)),
+      Math.floor((pageHeight - headerSpace - verticalPaddingPt * 2 + gutterPt) / (cellHeight + gutterPt)),
     );
 
     const pdfDoc = await PDFDocument.create();
@@ -95,8 +101,8 @@ export const generatePdf: (args: Args) => Promise<void> = async ({
         col = 0;
       }
 
-      const x = paddingPt + col * (cellWidth + gutterPt);
-      const baseY = (pageHeight - headerSpace) - paddingPt - cellHeight - row * (cellHeight + gutterPt);
+      const x = leftPaddingPt + col * (cellWidth + gutterPt);
+      const baseY = (pageHeight - headerSpace) - verticalPaddingPt - cellHeight - row * (cellHeight + gutterPt);
       const scale = Math.min(
         cellWidth / embedded.width,
         cellHeight / embedded.height,
@@ -138,7 +144,8 @@ export const generatePdf: (args: Args) => Promise<void> = async ({
         const footerFontSize = 8;
         const footerY = 20;
         const textWidth = font.widthOfTextAtSize(footerText, footerFontSize);
-        const textX = (pageWidth - textWidth) / 2;
+        const availableWidth = pageWidth - leftPaddingPt - rightPaddingPt;
+        const textX = leftPaddingPt + (availableWidth - textWidth) / 2;
         page.drawText(footerText, {
           x: textX,
           y: footerY,
@@ -160,7 +167,8 @@ export const generatePdf: (args: Args) => Promise<void> = async ({
         }
         const padding = 5; // pt
         const totalWidth = logoWidth + (logoWidth > 0 ? padding : 0) + textWidth;
-        const startX = (pageWidth - totalWidth) / 2;
+        const availableWidth = pageWidth - leftPaddingPt - rightPaddingPt;
+        const startX = leftPaddingPt + (availableWidth - totalWidth) / 2;
         if (embeddedLogo) {
           page.drawImage(embeddedLogo, {
             x: startX,

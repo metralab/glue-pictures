@@ -22,7 +22,9 @@ export const SettingsPanel: React.FC<Props> = ({
 }) => {
   const [maxSide, setMaxSide] = useState(1600);
   const [gutter, setGutter] = useState(4);
-  const [padding, setPadding] = useState(11);
+  const [verticalPadding, setVerticalPadding] = useState(11);
+  const [leftPadding, setLeftPadding] = useState(11);
+  const [rightPadding, setRightPadding] = useState(11);
   const [jpegQuality, setJpegQuality] = useState(0.85);
   const [pageSize, setPageSize] = useState<PagePresetKey>("a4");
   const [fileName, setFileName] = useState("risultato.pdf");
@@ -112,14 +114,34 @@ export const SettingsPanel: React.FC<Props> = ({
         <small>Ridimensiona immagini per ottenere un PDF più leggero.</small>
       </div>
       <div className={styles.control}>
-        <label htmlFor="padding">Spaziatura pagina (mm)</label>
+        <label htmlFor="verticalPadding">Margine verticale (mm)</label>
         <input
-          id="padding"
+          id="verticalPadding"
           type="number"
           min={5}
           max={30}
-          value={padding}
-          onChange={(event) => setPadding(clampNumber(Number(event.target.value), 5, 30))} />
+          value={verticalPadding}
+          onChange={(event) => setVerticalPadding(clampNumber(Number(event.target.value), 5, 30))} />
+      </div>
+      <div className={styles.control}>
+        <label htmlFor="leftPadding">Margine sinistro (mm)</label>
+        <input
+          id="leftPadding"
+          type="number"
+          min={5}
+          max={30}
+          value={leftPadding}
+          onChange={(event) => setLeftPadding(clampNumber(Number(event.target.value), 5, 30))} />
+      </div>
+      <div className={styles.control}>
+        <label htmlFor="rightPadding">Margine destro (mm)</label>
+        <input
+          id="rightPadding"
+          type="number"
+          min={5}
+          max={30}
+          value={rightPadding}
+          onChange={(event) => setRightPadding(clampNumber(Number(event.target.value), 5, 30))} />
       </div>
       <div className={styles.control}>
         <label htmlFor="gutter">Spazio tra celle (mm)</label>
@@ -219,7 +241,9 @@ export const SettingsPanel: React.FC<Props> = ({
           setStatus,
           pageSize,
           columns,
-          padding,
+          verticalPadding,
+          leftPadding,
+          rightPadding,
           gutter,
           maxSide,
           jpegQuality,
